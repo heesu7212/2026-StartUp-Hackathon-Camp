@@ -529,15 +529,38 @@ const InsuranceModal = ({ type, onClose }) => {
 
 // --- 1. Splash Screen (Loading Page) ---
 const SplashScreen = ({ onFinish }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Image preloader
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onFinish();
-    }, 2500); // 2.5 seconds loading time
-    return () => clearTimeout(timer);
-  }, [onFinish]);
+    const img = new Image();
+    img.src = LOGO_SYMBOL_URL;
+    img.onload = () => setImageLoaded(true);
+    // Fallback if image fails or takes too long (e.g., 3s)
+    const fallbackTimer = setTimeout(() => setImageLoaded(true), 3000);
+    return () => clearTimeout(fallbackTimer);
+  }, []);
+
+  // Start splash timer ONLY after image is ready
+  useEffect(() => {
+    if (imageLoaded) {
+      const timer = setTimeout(() => {
+        onFinish();
+      }, 2500); // 2.5 seconds display time
+      return () => clearTimeout(timer);
+    }
+  }, [imageLoaded, onFinish]);
+
+  if (!imageLoaded) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#198F51] text-white">
+         {/* Invisible loader state */}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-[#198F51] text-white">
+    <div className="flex flex-col items-center justify-center h-screen bg-[#198F51] text-white animate-fade-in">
       <div className="animate-bounce mb-6 bg-white p-4 rounded-3xl shadow-xl">
         <img src={LOGO_SYMBOL_URL} alt="Kare Logo" className="w-20 h-20 object-contain" />
       </div>
@@ -802,7 +825,7 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
   });
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 pb-32">
       {/* Search Bar */}
       <div className="relative">
         <input 
@@ -903,7 +926,7 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
 // --- Insurance View (Revamped for NHIS Guide) ---
 function InsuranceView() {
   return (
-    <div className="p-5 min-h-full">
+    <div className="p-5 min-h-full pb-32">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <ShieldCheck className="text-[#198F51]" /> NHIS Guide
@@ -921,16 +944,18 @@ function InsuranceView() {
             <h3 className="font-bold text-gray-800 text-lg">1. Alien Registration</h3>
             <p className="text-sm text-gray-600 mt-1">
               You must have an <b>Alien Registration Card (ARC)</b>. 
-              NHIS enrollment is mandatory for foreigners staying 6+ months.
+              NHIS enrollment is mandatory for foreigners staying <b>6+ months</b> in Korea.
             </p>
           </div>
 
           {/* Step 2 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
-            <h3 className="font-bold text-gray-800 text-lg">2. Automatic Enrollment</h3>
+            <h3 className="font-bold text-gray-800 text-lg">2. Enrollment</h3>
             <p className="text-sm text-gray-600 mt-1">
-              If you work, your employer signs you up. If you are a student or not working, you will receive a bill for "Local Subscriber" automatically.
+              <b>Employee:</b> Automatic by employer.<br/>
+              <b>Student (D-2/D-4):</b> Automatic processing.<br/>
+              <b>Others:</b> Receive a bill as "Local Subscriber" at your registered address.
             </p>
           </div>
 
@@ -939,17 +964,21 @@ function InsuranceView() {
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
             <h3 className="font-bold text-gray-800 text-lg">3. Paying Premiums</h3>
             <p className="text-sm text-gray-600 mt-1">
-              Pay monthly (~150,000 KRW for local). <br/>
-              <span className="text-red-500 text-xs font-bold">Warning:</span> Visa extension is denied if you have unpaid premiums.
+              Monthly premium is approx. <b>150,990 KRW</b> (2024 min for local). <br/>
+              Students get a discount (~50-70% off).<br/>
+              <span className="text-red-500 text-xs font-bold block mt-1">Warning: Visa extension is denied if you have unpaid premiums.</span>
             </p>
           </div>
 
           {/* Step 4 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
-            <h3 className="font-bold text-gray-800 text-lg">4. Visiting Hospitals</h3>
+            <h3 className="font-bold text-gray-800 text-lg">4. Benefits</h3>
             <p className="text-sm text-gray-600 mt-1">
-              Just show your ARC at the desk. You pay only <b>10~30%</b> of the total cost.
+              Same coverage as Korean citizens.<br/>
+              <b>Outpatient:</b> Pay 30~60% of cost.<br/>
+              <b>Inpatient:</b> Pay 20%.<br/>
+              <b>Pharmacy:</b> Pay 30%.
             </p>
           </div>
         </div>
@@ -986,7 +1015,7 @@ function InsuranceView() {
       </div>
 
       {/* Locked Premium Feature - 1:1 Consultation */}
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg mb-8">
          {/* Background Content (Blurred) */}
          <div className="p-6 filter blur-[2px] opacity-50 select-none">
             <div className="flex items-center gap-3 mb-4">
@@ -1040,7 +1069,7 @@ function FlashcardView() {
   // 2. Level 1: Category Selection Grid
   if (!selectedCategory) {
     return (
-      <div className="p-5 min-h-full">
+      <div className="p-5 min-h-full pb-32">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Medical Procedures</h2>
           <p className="text-sm text-gray-500">Select a category to learn about treatments.</p>
@@ -1085,7 +1114,7 @@ function FlashcardView() {
   // 3. Level 2: Procedure List for Category
   if (selectedCategory && !selectedProcedure) {
     return (
-      <div className={`p-5 min-h-full bg-white transition-colors duration-500`}>
+      <div className={`p-5 min-h-full bg-white transition-colors duration-500 pb-32`}>
         <div className="flex items-center mb-6">
           <button 
             onClick={() => setSelectedCategory(null)}
@@ -1125,7 +1154,7 @@ function FlashcardView() {
 
   // 4. Level 3: Procedure Detail (Step-by-Step)
   return (
-    <div className="p-5 min-h-full bg-white">
+    <div className="p-5 min-h-full bg-white pb-32">
        <div className="flex items-center mb-6">
           <button 
             onClick={() => setSelectedProcedure(null)}
@@ -1198,7 +1227,7 @@ function ScanView() {
   };
 
   return (
-    <div className="p-5 flex flex-col items-center flex-1 justify-center min-h-[60vh]">
+    <div className="p-5 flex flex-col items-center flex-1 justify-center min-h-[60vh] pb-32">
       <input 
         type="file" 
         accept="image/*" 
@@ -1309,7 +1338,7 @@ function ScanView() {
 // --- NEW Matching View (Premium Locked) ---
 function MatchingView() {
   return (
-    <div className="p-5 min-h-full flex flex-col items-center relative overflow-hidden">
+    <div className="p-5 min-h-full flex flex-col items-center relative overflow-hidden pb-32">
       <div className="mb-6 w-full z-10">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Users className="text-[#198F51]"/> Matching
@@ -1365,7 +1394,7 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
     : hospitalReviews.filter(r => r.nationality === filterNation);
 
   return (
-    <div className="bg-white min-h-full">
+    <div className="bg-white min-h-full pb-32">
       {/* Top Nav */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-100 flex items-center">
         <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
@@ -1534,7 +1563,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
   };
 
   return (
-    <div className="p-5 relative">
+    <div className="p-5 relative pb-32">
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 animate-fade-in">
