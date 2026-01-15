@@ -3,23 +3,45 @@ import {
   Search, MapPin, Star, BookOpen, User, Phone, Globe, Activity, Heart, 
   ChevronRight, X, ChevronLeft, Flame, Info, Filter, Camera, ScanLine,
   Pill, Stethoscope, Sun, Ear, Bone, Scissors, Siren, ShieldCheck, RefreshCw, Zap, Upload, Plus,
-  Venus, Users, Lock, Edit2, Check, Share2, Mail, ExternalLink, MessageCircle
+  Venus, Users, Lock, Edit2, Check, Share2, MessageCircle, Home, CreditCard, ExternalLink
 } from 'lucide-react';
 
-import { auth, googleProvider } from './firebase';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+// --- Firebase Imports & Initialization ---
+import { initializeApp } from "firebase/app";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged,
+  signInWithCustomToken,
+  signInAnonymously
+} from "firebase/auth";
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc 
+} from "firebase/firestore";
 
+// Initialize Firebase (System Global Variable or Fallback)
+const firebaseConfig = typeof __firebase_config !== 'undefined' 
+  ? JSON.parse(__firebase_config) 
+  : {}; // Fallback for local testing if needed
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
 // ==============================================================================
 // [로고 설정 영역] 
 // ==============================================================================
 
-// 1. 로고 심볼 (로딩 화면용)
+// 1. 로고 심볼 (로딩 화면 & 로그인 화면용)
 const LOGO_SYMBOL_URL = "https://i.postimg.cc/W1ms6TqB/seukeulinsyas-2026-01-16-014925.png"; 
 
-// 2. 텍스트 로고 (메인 앱 상단용 - 업데이트됨)
+// 2. 텍스트 로고 (메인 앱 상단용)
 const LOGO_WITH_TEXT_URL = "https://i.postimg.cc/6QPX03zr/Kakao-Talk-20260115-183611067.jpg"; 
 
 // ==============================================================================
@@ -47,7 +69,6 @@ const Tooth = ({ size = 24, className = "", color = "currentColor" }) => (
 
 // --- Constants & Data ---
 
-// Updated Flashcard Categories (Removed 'admin' and 'pharmacy')
 const FLASHCARD_CATEGORIES = [
   { 
     id: 'general', 
@@ -461,7 +482,6 @@ const REVIEWS_DB = [
 
 const CATEGORIES = ["All", "General", "Dental", "Dermatology", "ENT", "Orthopedic", "Internal Med", "OBGYN", "Surgery"];
 
-// Map simple names to IDs for color lookup
 const CATEGORY_MAPPING = {
   'general': 'General',
   'dental': 'Dental',
@@ -474,7 +494,6 @@ const CATEGORY_MAPPING = {
   'internal': 'Internal Med'
 };
 
-// Helper to find category color by simple name mapping
 const getCategoryColor = (catName) => {
   if (catName === "All") return { bg: "bg-gray-100", text: "text-gray-600", active: "bg-gray-800 text-white" };
   
@@ -498,7 +517,7 @@ const getCategoryColor = (catName) => {
 
 const Badge = ({ children, color = "blue", onClick }) => {
   const colors = {
-    blue: "bg-[#198F51]/10 text-[#198F51]", // Blue mapped to Green theme
+    blue: "bg-[#198F51]/10 text-[#198F51]", 
     green: "bg-green-100 text-green-800",
     purple: "bg-purple-100 text-purple-800",
     gray: "bg-gray-100 text-gray-800",
@@ -514,10 +533,7 @@ const Badge = ({ children, color = "blue", onClick }) => {
   );
 };
 
-// --- Modal Component for Insurance ---
 const InsuranceModal = ({ type, onClose }) => {
-  // Simple modal to show when user clicks badges in other screens
-  // For the main Insurance Tab, we use InsuranceView
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
@@ -533,26 +549,23 @@ const InsuranceModal = ({ type, onClose }) => {
   );
 };
 
-// --- 1. Splash Screen (Loading Page) ---
+// --- 1. Splash Screen ---
 const SplashScreen = ({ onFinish }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Image preloader
   useEffect(() => {
     const img = new Image();
     img.src = LOGO_SYMBOL_URL;
     img.onload = () => setImageLoaded(true);
-    // Fallback if image fails or takes too long (e.g., 3s)
     const fallbackTimer = setTimeout(() => setImageLoaded(true), 3000);
     return () => clearTimeout(fallbackTimer);
   }, []);
 
-  // Start splash timer ONLY after image is ready
   useEffect(() => {
     if (imageLoaded) {
       const timer = setTimeout(() => {
         onFinish();
-      }, 2500); // 2.5 seconds display time
+      }, 2500); 
       return () => clearTimeout(timer);
     }
   }, [imageLoaded, onFinish]);
@@ -560,7 +573,6 @@ const SplashScreen = ({ onFinish }) => {
   if (!imageLoaded) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#198F51] text-white">
-         {/* Invisible loader state */}
       </div>
     );
   }
@@ -577,108 +589,29 @@ const SplashScreen = ({ onFinish }) => {
   );
 };
 
-// --- 2. Login Page ---
-const LoginPage = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin();
-    }, 1000);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFFCF4] px-4 relative">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-green-50">
-        <div className="text-center mb-8">
-          {/* Default User Icon */}
-          <div className="inline-flex items-center justify-center w-24 h-24 mb-4 bg-[#198F51]/10 text-[#198F51] rounded-full p-4">
-             <User size={48} />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
-          <p className="text-gray-500 text-sm mt-1">Sign in to access your medical guide</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#198F51] focus:border-[#198F51] transition-colors"
-                placeholder="user@example.com"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#198F51] focus:border-[#198F51] transition-colors"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#198F51] hover:bg-[#147a43] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#198F51] transition-colors disabled:opacity-70"
-          >
-            {isLoading ? (
-              <RefreshCw size={20} className="animate-spin" />
-            ) : (
-              <>
-                Sign In <ChevronRight size={18} className="ml-2" />
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Don't have an account? <span className="text-[#198F51] font-bold cursor-pointer hover:underline">Sign up</span>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-// --- Original Main App (SickAndSeekApp) ---
-// Note: Changed from default export to named function, wrapped by App below
+// --- Main App Logic (Consolidated) ---
 function SickAndSeekApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [insuranceModalType, setInsuranceModalType] = useState(null);
   
-  // 🔥 로그인 상태 관리 (여기에 추가!)
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // 🔥 로그인 상태 감지 (여기에 추가!)
+  // Auth Initialization & Listener
   useEffect(() => {
+    // Try to use a custom token if provided by the environment
+    const initAuth = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        try {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } catch (e) {
+          console.error("Custom token sign in failed", e);
+        }
+      }
+    };
+    initAuth();
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -686,25 +619,23 @@ function SickAndSeekApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🔥 구글 로그인 함수 (여기에 추가!)
   const handleGoogleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      console.error("로그인 실패:", error);
+      console.error("Login failed:", error);
     }
   };
 
-  // 🔥 로그아웃 함수 (여기에 추가!)
   const handleLogout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error("로그아웃 실패:", error);
+      console.error("Logout failed:", error);
     }
   };
   
-  // Deep linking check on mount
+  // Deep linking check
   useEffect(() => {
     const hash = window.location.hash;
     if (hash === '#profile') {
@@ -712,13 +643,12 @@ function SickAndSeekApp() {
     }
   }, []);
 
-const openInsuranceModal = (e, type) => {
+  const openInsuranceModal = (e, type) => {
     e.stopPropagation();
     setInsuranceModalType(type);
   };
 
-  // 🔥 여기에 복붙!
-  // 로딩 중
+  // 1. Loading State
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -730,13 +660,21 @@ const openInsuranceModal = (e, type) => {
     );
   }
 
- if (!user) {
+  // 2. Not Logged In -> Show Google Login with Custom Logo (No more intermediate Login Page)
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="bg-teal-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Activity size={40} className="text-teal-600" />
+          
+          {/* Updated Logo Area */}
+          <div className="flex justify-center mb-8">
+             <img 
+               src={LOGO_SYMBOL_URL} 
+               alt="Sick&Seek Logo" 
+               className="w-32 h-32 object-contain drop-shadow-md" 
+             />
           </div>
+
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Sick&Seek</h1>
           <p className="text-gray-500 mb-8">Your healthcare companion in Korea</p>
           
@@ -757,23 +695,20 @@ const openInsuranceModal = (e, type) => {
     );
   }
  
-
+  // 3. Logged In -> Main App Interface
   return (
     <div className="min-h-screen bg-[#FFFCF4] flex justify-center font-sans">
-      {/* Mobile Wrapper */}
       <div className="w-full max-w-md bg-[#FFFCF4] shadow-xl h-screen flex flex-col relative overflow-hidden">
         
         {/* Header */}
         <header className="px-6 py-4 bg-[#198F51] text-white shadow-md z-10 flex justify-between items-center">
           <div>
-            {/* Replaced Text with Brand Logo Image */}
             <div className="h-10 mb-1">
                 <img src={LOGO_WITH_TEXT_URL} alt="Kare" className="h-full object-contain" />
             </div>
             <p className="text-xs text-green-100 opacity-90 pl-1">Medical Care for Everyone</p>
           </div>
           
-          {/* User Profile - Click to go to My Health */}
           <div 
             onClick={() => setActiveTab('profile')}
             className="bg-[#198F51] brightness-110 p-2 rounded-full border border-white/20 cursor-pointer hover:bg-green-700 transition-colors"
@@ -812,10 +747,9 @@ const openInsuranceModal = (e, type) => {
           )}
         </main>
 
-        {/* Bottom Navigation (Sticky at bottom) */}
+        {/* Bottom Navigation */}
         <nav className="absolute bottom-0 w-full bg-white border-t border-gray-200 h-[80px] flex items-center justify-between px-2 z-20">
           
-          {/* 1. Procedures */}
           <NavItem 
             icon={<BookOpen size={24} />} 
             label="Procedures" 
@@ -823,7 +757,6 @@ const openInsuranceModal = (e, type) => {
             onClick={() => { setActiveTab('cards'); setSelectedHospital(null); }} 
           />
 
-          {/* 2. Matching */}
           <NavItem 
             icon={<Users size={24} />} 
             label="Matching" 
@@ -831,7 +764,7 @@ const openInsuranceModal = (e, type) => {
             onClick={() => { setActiveTab('matching'); setSelectedHospital(null); }} 
           />
 
-          {/* 3. Find (Center Main - Circle) */}
+          {/* Center Main Button */}
           <div className="relative -top-6">
             <button 
               onClick={() => { setActiveTab('home'); setSelectedHospital(null); }}
@@ -842,7 +775,6 @@ const openInsuranceModal = (e, type) => {
             <span className={`text-[10px] font-bold absolute -bottom-4 left-1/2 transform -translate-x-1/2 ${activeTab === 'home' ? 'text-[#198F51]' : 'text-gray-400'}`}>Find</span>
           </div>
 
-          {/* 4. Insurance */}
           <NavItem 
             icon={<ShieldCheck size={24} />} 
             label="Insurance" 
@@ -850,7 +782,6 @@ const openInsuranceModal = (e, type) => {
             onClick={() => { setActiveTab('insurance'); setSelectedHospital(null); }} 
           />
 
-          {/* 5. My Health */}
           <NavItem 
             icon={<Activity size={24} />} 
             label="My Health" 
@@ -878,7 +809,6 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
   const [searchTerm, setSearchTerm] = useState("");
   const HOT_THRESHOLD = 100;
 
-  // Filter AND Sort Logic (HOT hospitals first)
   const filteredHospitals = HOSPITALS.filter(h => 
     (activeCat === "All" || h.type === activeCat) &&
     (h.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -888,17 +818,13 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
     const isAHot = a.reviews >= HOT_THRESHOLD;
     const isBHot = b.reviews >= HOT_THRESHOLD;
     
-    // If A is HOT and B is not, A comes first (-1)
     if (isAHot && !isBHot) return -1;
-    // If B is HOT and A is not, B comes first (1)
     if (!isAHot && isBHot) return 1;
-    // Otherwise keep original order
     return 0;
   });
 
   return (
     <div className="p-4 space-y-6 pb-32">
-      {/* Search Bar */}
       <div className="relative">
         <input 
           type="text" 
@@ -910,7 +836,6 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
         <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
       </div>
 
-      {/* Categories with Color Sync */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {CATEGORIES.map(cat => {
           const colors = getCategoryColor(cat);
@@ -930,7 +855,6 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
         })}
       </div>
 
-      {/* Hospital List */}
       <div className="space-y-4">
         <div className="flex justify-between items-end">
           <h2 className="font-bold text-gray-800 text-lg">Hospitals in Seoul</h2>
@@ -938,7 +862,6 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
         </div>
 
         {filteredHospitals.map(hospital => {
-          // Get color based on hospital type for the badge
           const categoryColors = getCategoryColor(hospital.type);
           
           return (
@@ -995,7 +918,6 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
   );
 }
 
-// --- Insurance View (Revamped for NHIS Guide) ---
 function InsuranceView() {
   return (
     <div className="p-5 min-h-full pb-32">
@@ -1006,11 +928,9 @@ function InsuranceView() {
         <p className="text-sm text-gray-500">How to use Korea's National Health Insurance</p>
       </div>
 
-      {/* Basic Procedures - Step by Step */}
       <div className="space-y-6 mb-8">
         <div className="relative border-l-2 border-gray-200 ml-3 space-y-8">
           
-          {/* Step 1 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
             <h3 className="font-bold text-gray-800 text-lg">1. Alien Registration</h3>
@@ -1020,7 +940,6 @@ function InsuranceView() {
             </p>
           </div>
 
-          {/* Step 2 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
             <h3 className="font-bold text-gray-800 text-lg">2. Enrollment</h3>
@@ -1031,7 +950,6 @@ function InsuranceView() {
             </p>
           </div>
 
-          {/* Step 3 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
             <h3 className="font-bold text-gray-800 text-lg">3. Paying Premiums</h3>
@@ -1042,7 +960,6 @@ function InsuranceView() {
             </p>
           </div>
 
-          {/* Step 4 */}
           <div className="relative pl-8">
             <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
             <h3 className="font-bold text-gray-800 text-lg">4. Benefits</h3>
@@ -1056,7 +973,6 @@ function InsuranceView() {
         </div>
       </div>
 
-      {/* Official Contacts */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
         <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
           <Phone size={18} className="text-[#198F51]"/> Official NHIS Contacts
@@ -1086,9 +1002,7 @@ function InsuranceView() {
         </div>
       </div>
 
-      {/* Locked Premium Feature - 1:1 Consultation */}
       <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg mb-8">
-         {/* Background Content (Blurred) */}
          <div className="p-6 filter blur-[2px] opacity-50 select-none">
             <div className="flex items-center gap-3 mb-4">
                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1100,7 +1014,6 @@ function InsuranceView() {
             </div>
          </div>
 
-         {/* Lock Overlay */}
          <div className="absolute inset-0 bg-gradient-to-br from-[#198F51]/90 to-[#147a43]/90 flex flex-col items-center justify-center text-white p-6 text-center">
             <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
                <MessageCircle size={28} className="text-white"/>
@@ -1121,9 +1034,8 @@ function InsuranceView() {
 function FlashcardView() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
-  const [showScan, setShowScan] = useState(false); // Toggle Scan View
+  const [showScan, setShowScan] = useState(false);
 
-  // 1. Scan View Mode (Integrated inside Procedures)
   if (showScan) {
     return (
       <div className="min-h-full flex flex-col">
@@ -1138,7 +1050,6 @@ function FlashcardView() {
     );
   }
 
-  // 2. Level 1: Category Selection Grid
   if (!selectedCategory) {
     return (
       <div className="p-5 min-h-full pb-32">
@@ -1164,7 +1075,6 @@ function FlashcardView() {
           ))}
         </div>
 
-        {/* Scan Feature moved here */}
         <div 
           onClick={() => setShowScan(true)}
           className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-5 text-white shadow-lg flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-transform"
@@ -1183,7 +1093,6 @@ function FlashcardView() {
     );
   }
 
-  // 3. Level 2: Procedure List for Category
   if (selectedCategory && !selectedProcedure) {
     return (
       <div className={`p-5 min-h-full bg-white transition-colors duration-500 pb-32`}>
@@ -1224,7 +1133,6 @@ function FlashcardView() {
     );
   }
 
-  // 4. Level 3: Procedure Detail (Step-by-Step)
   return (
     <div className="p-5 min-h-full bg-white pb-32">
        <div className="flex items-center mb-6">
@@ -1269,9 +1177,8 @@ function FlashcardView() {
   );
 }
 
-// --- NEW SCAN VIEW (Sub-component of FlashcardView) ---
 function ScanView() {
-  const [scanningState, setScanningState] = useState('idle'); // idle, scanning, result
+  const [scanningState, setScanningState] = useState('idle');
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -1282,7 +1189,6 @@ function ScanView() {
       setSelectedImage(imageUrl);
       setScanningState('scanning');
       
-      // Simulate scanning delay
       setTimeout(() => {
         setScanningState('result');
       }, 2500);
@@ -1327,12 +1233,10 @@ function ScanView() {
       {scanningState === 'scanning' && (
         <div className="flex-1 flex flex-col items-center justify-center w-full">
            <div className="relative w-72 h-96 bg-gray-800 rounded-3xl overflow-hidden shadow-xl flex items-center justify-center">
-             {/* Selected Image Background */}
              {selectedImage && (
                <img src={selectedImage} alt="Scanning" className="absolute inset-0 w-full h-full object-cover opacity-80" />
              )}
              
-             {/* Scan Overlay */}
              <div className="absolute inset-0 bg-black/20 z-10"></div>
              <ScanLine className="text-[#198F51] animate-pulse z-20" size={64} />
              <div className="absolute inset-x-0 h-1 bg-[#198F51] shadow-[0_0_15px_rgba(25,143,81,0.8)] z-20 animate-[scan_2s_ease-in-out_infinite] top-0"></div>
@@ -1348,36 +1252,28 @@ function ScanView() {
              <span className="text-xs font-bold text-[#198F51]">AR Translation Active</span>
            </div>
 
-           {/* AR Result View (User Image with Overlays) */}
            <div className="relative w-72 h-96 bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-white ring-1 ring-gray-200">
              
-             {/* 1. User Uploaded Photo */}
              {selectedImage && (
                 <img src={selectedImage} alt="Result" className="absolute inset-0 w-full h-full object-cover" />
              )}
 
-             {/* 2. AR Overlays (Floating 'Translated' Badges) */}
-             
-             {/* Name Tag - Center Top */}
              <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 animate-[bounce_1s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">Medicine</p>
                  <p className="text-sm font-bold text-[#198F51]">타이레놀 (Painkiller)</p>
                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#198F51] rounded-full animate-ping"></div>
              </div>
 
-             {/* Dosage Tag - Bottom Right */}
              <div className="absolute bottom-1/3 right-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 delay-100 animate-[bounce_1.2s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">Dose</p>
                  <p className="text-sm font-bold text-indigo-700">2 Tablets</p>
              </div>
 
-             {/* Instruction Tag - Bottom Left */}
              <div className="absolute bottom-20 left-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 delay-200 animate-[bounce_1.4s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">How to take</p>
                  <p className="text-sm font-bold text-red-600">After Meal (30min)</p>
              </div>
 
-             {/* AR HUD Elements */}
              <div className="absolute inset-0 border-2 border-[#198F51]/30 rounded-3xl pointer-events-none"></div>
              <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-[10px] backdrop-blur-sm">
                  AI Confidence: 98%
@@ -1407,7 +1303,6 @@ function ScanView() {
   );
 }
 
-// --- NEW Matching View (Premium Locked) ---
 function MatchingView() {
   return (
     <div className="p-5 min-h-full flex flex-col items-center relative overflow-hidden pb-32">
@@ -1418,21 +1313,19 @@ function MatchingView() {
           <p className="text-sm text-gray-500">Connect with local medical buddies.</p>
       </div>
 
-      {/* Blurred Content Background */}
       <div className="w-full space-y-4 filter blur-[6px] opacity-60 pointer-events-none select-none">
          {[1, 2, 3].map((i) => (
            <div key={i} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-              <div className="flex-1">
+             <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+             <div className="flex-1">
                  <div className="w-1/2 h-4 bg-gray-200 rounded mb-2"></div>
                  <div className="w-3/4 h-3 bg-gray-100 rounded"></div>
-              </div>
-              <div className="w-16 h-8 bg-[#198F51]/20 rounded-lg"></div>
+             </div>
+             <div className="w-16 h-8 bg-[#198F51]/20 rounded-lg"></div>
            </div>
          ))}
       </div>
 
-      {/* Locked Overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-20 p-6 text-center">
          <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-[#198F51]/30 w-full max-w-xs flex flex-col items-center animate-fade-in">
             <div className="bg-[#198F51]/10 p-4 rounded-full mb-4">
@@ -1453,12 +1346,10 @@ function MatchingView() {
 }
 
 function HospitalDetail({ hospital, onBack, onShowInsurance }) {
-  // Nationality Filter Logic
   const [filterNation, setFilterNation] = useState("All");
 
-  const hospitalReviews = REVIEWS_DB.filter(r => r.hospitalId === hospital.id || (hospital.id === 1 && r.hospitalId === undefined)); // Fallback for demo
+  const hospitalReviews = REVIEWS_DB.filter(r => r.hospitalId === hospital.id || (hospital.id === 1 && r.hospitalId === undefined)); 
   
-  // Get unique nationalities for dropdown
   const nationalities = ["All", ...new Set(hospitalReviews.map(r => r.nationality))];
 
   const filteredReviews = filterNation === "All" 
@@ -1467,7 +1358,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
 
   return (
     <div className="bg-white min-h-full pb-32">
-      {/* Top Nav */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-sm z-10 px-4 py-3 border-b border-gray-100 flex items-center">
         <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
           <X size={20} className="text-gray-600" />
@@ -1476,7 +1366,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
       </div>
 
       <div className="p-5 space-y-6">
-        {/* Header Info */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{hospital.name}</h2>
           <div className="flex items-center text-gray-500 text-sm mt-1">
@@ -1485,7 +1374,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
           <button className="flex items-center justify-center gap-2 py-3 bg-[#198F51]/10 text-[#198F51] rounded-xl font-medium text-sm">
             <Phone size={18} /> Call (Eng)
@@ -1495,7 +1383,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
           </button>
         </div>
 
-        {/* Description & Insurance */}
         <div>
           <h3 className="font-bold text-gray-900 mb-2">About & Insurance</h3>
           <p className="text-gray-600 text-sm leading-relaxed mb-3">{hospital.description}</p>
@@ -1518,7 +1405,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
           </div>
         </div>
 
-        {/* Foreigner Reviews Section with Filter */}
         <div className="border-t border-gray-100 pt-6">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -1526,7 +1412,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
               <p className="text-xs text-gray-500">Verified Foreign Residents</p>
             </div>
             
-            {/* Nationality Filter Dropdown */}
             <div className="relative">
               <select 
                 value={filterNation}
@@ -1582,7 +1467,6 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
         </div>
       </div>
        
-       {/* Booking Button Mockup */}
       <div className="sticky bottom-0 p-4 bg-white border-t border-gray-100 pb-8">
         <button className="w-full bg-[#198F51] text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#147a43] transition-colors">
           Book Appointment
@@ -1603,7 +1487,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
 
   const userId = user?.uid || "guest";
 
-  // 🔥 사용자 정보 불러오기
   useEffect(() => {
     if (!user) return;
     
@@ -1626,7 +1509,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
     loadUserData();
   }, [user, userId]);
 
-  // 🔥 알레르기 추가 (Firebase 저장)
   const handleAddAllergy = async () => {
     if (newAllergy.trim() && !myAllergies.includes(newAllergy.trim())) {
       const updated = [...myAllergies, newAllergy.trim()];
@@ -1645,7 +1527,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
     }
   };
 
-  // 🔥 알레르기 삭제
   const handleRemoveAllergy = async (allergyToRemove) => {
     const updated = myAllergies.filter(a => a !== allergyToRemove);
     setMyAllergies(updated);
@@ -1661,7 +1542,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
     }
   };
 
-  // 🔥 약 추가
   const handleAddMedication = async () => {
     if (newMedication.trim() && !myMedications.includes(newMedication.trim())) {
       const updated = [...myMedications, newMedication.trim()];
@@ -1680,7 +1560,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
     }
   };
 
-  // 🔥 약 삭제
   const handleRemoveMedication = async (medToRemove) => {
     const updated = myMedications.filter(m => m !== medToRemove);
     setMyMedications(updated);
@@ -1711,7 +1590,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
 
   return (
     <div className="p-5 relative pb-32">
-      {/* Toast Notification */}
       {showToast && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 animate-fade-in">
           Link Copied!
@@ -1756,7 +1634,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
                 )}
               </div>
               
-              {/* Share Button */}
               <button onClick={copyProfileLink} className="text-gray-400 hover:text-[#198F51] p-1">
                 <Share2 size={18} />
               </button>
@@ -1787,7 +1664,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
             Add substances you are allergic to for emergency use.
         </p>
         
-        {/* Allergy List */}
         <div className="flex flex-wrap gap-2 mb-3">
           {myAllergies.map(allergy => (
             <span key={allergy} className="bg-white text-yellow-800 text-xs font-bold px-3 py-1.5 rounded-lg border border-yellow-200 flex items-center gap-2">
@@ -1802,7 +1678,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
           )}
         </div>
 
-        {/* Add Input */}
         <div className="flex gap-2">
           <input 
             type="text" 
@@ -1820,7 +1695,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
         </div>
       </div>
 
-      {/* --- New Section: Current Medications --- */}
       <div className="bg-[#198F51]/5 rounded-xl p-4 border border-[#198F51]/20 mb-4">
         <h4 className="font-bold text-[#198F51] mb-2 flex items-center gap-2">
             <Pill size={16} className="fill-current" /> Current Medications
@@ -1829,7 +1703,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
             List medications you are currently taking.
         </p>
         
-        {/* Meds List */}
         <div className="flex flex-wrap gap-2 mb-3">
           {myMedications.map(med => (
             <span key={med} className="bg-white text-[#198F51] text-xs font-bold px-3 py-1.5 rounded-lg border border-[#198F51]/20 flex items-center gap-2">
@@ -1844,7 +1717,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
           )}
         </div>
 
-        {/* Add Input */}
         <div className="flex gap-2">
           <input 
             type="text" 
@@ -1863,7 +1735,7 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
       </div>
 
       <div className="mt-4">
-           <button className="w-full bg-red-50 text-red-600 text-xs font-bold py-3 rounded-lg border border-red-200 hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
+            <button className="w-full bg-red-50 text-red-600 text-xs font-bold py-3 rounded-lg border border-red-200 hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
               <Siren size={16} /> Show Emergency Card (Korean)
           </button>
       </div>
@@ -1883,7 +1755,6 @@ function ProfileView({ onShowInsurance, user, onLogout }) {
          </div>
       </div>
 
-      {/* 🔥 로그아웃 버튼 추가 */}
       <div className="mt-6">
         <button 
           onClick={onLogout}
@@ -1907,15 +1778,13 @@ function NavItem({ icon, label, isActive, onClick }) {
 
 // --- Main App Orchestrator ---
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('splash');
+  const [showSplash, setShowSplash] = useState(true);
 
-  if (currentScreen === 'splash') {
-    return <SplashScreen onFinish={() => setCurrentScreen('login')} />;
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
-  if (currentScreen === 'login') {
-    return <LoginPage onLogin={() => setCurrentScreen('app')} />;
-  }
-
+  // 이제 'login' state 대신 SickAndSeekApp 내부에서 user 상태를 체크하여 
+  // 로그인 화면을 보여줄지 메인 화면을 보여줄지 결정합니다.
   return <SickAndSeekApp />;
 }
