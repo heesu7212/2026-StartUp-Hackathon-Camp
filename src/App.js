@@ -3,7 +3,7 @@ import {
   Search, MapPin, Star, BookOpen, User, Phone, Globe, Activity, Heart, 
   ChevronRight, X, ChevronLeft, Flame, Info, Filter, Camera, ScanLine,
   Pill, Stethoscope, Sun, Ear, Bone, Scissors, Siren, ShieldCheck, RefreshCw, Zap, Upload, Plus,
-  Venus, Users, Lock, Edit2, Check, Share2, Mail, LogIn, ExternalLink, MessageCircle
+  Venus, Users, Lock, Edit2, Check, Share2, Mail, ExternalLink, MessageCircle
 } from 'lucide-react';
 
 // ==============================================================================
