@@ -6,6 +6,12 @@ import {
   Venus, Users, Lock, Edit2, Check, Share2, Mail, ExternalLink, MessageCircle
 } from 'lucide-react';
 
+import { auth, googleProvider } from './firebase';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+
 // ==============================================================================
 // [로고 설정 영역] 
 // ==============================================================================
@@ -667,9 +673,40 @@ function SickAndSeekApp() {
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [insuranceModalType, setInsuranceModalType] = useState(null);
   
+  // 🔥 로그인 상태 관리 (여기에 추가!)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
   // State for user data
   const [myAllergies, setMyAllergies] = useState(["Peanuts", "Penicillin"]);
   const [myMedications, setMyMedications] = useState(["Tylenol"]);
+  
+  // 🔥 로그인 상태 감지 (여기에 추가!)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 🔥 구글 로그인 함수 (여기에 추가!)
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("로그인 실패:", error);
+    }
+  };
+
+  // 🔥 로그아웃 함수 (여기에 추가!)
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    }
+  };
   
   // Deep linking check on mount
   useEffect(() => {
@@ -679,10 +716,51 @@ function SickAndSeekApp() {
     }
   }, []);
 
-  const openInsuranceModal = (e, type) => {
-    e.stopPropagation(); // Prevent triggering parent clicks
+const openInsuranceModal = (e, type) => {
+    e.stopPropagation();
     setInsuranceModalType(type);
   };
+
+  // 🔥 여기에 복붙!
+  // 로딩 중
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+ if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="bg-teal-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Activity size={40} className="text-teal-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Sick&Seek</h1>
+          <p className="text-gray-500 mb-8">Your healthcare companion in Korea</p>
+          
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-3 shadow-sm"
+          >
+            <svg className="w-6 h-6" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+ 
 
   return (
     <div className="min-h-screen bg-[#FFFCF4] flex justify-center font-sans">
@@ -729,11 +807,9 @@ function SickAndSeekApp() {
               {activeTab === 'insurance' && <InsuranceView />}
               {activeTab === 'profile' && (
                 <ProfileView 
-                  onShowInsurance={openInsuranceModal} 
-                  allergies={myAllergies}
-                  setAllergies={setMyAllergies}
-                  medications={myMedications}
-                  setMedications={setMyMedications}
+                  onShowInsurance={openInsuranceModal}
+                  user={user}
+                  onLogout={handleLogout}
                 />
               )}
             </>
@@ -1520,33 +1596,108 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
   );
 }
 
-function ProfileView({ onShowInsurance, allergies, setAllergies, medications, setMedications }) {
+function ProfileView({ onShowInsurance, user, onLogout }) {
+  const [myAllergies, setMyAllergies] = useState([]);
+  const [myMedications, setMyMedications] = useState([]);
   const [newAllergy, setNewAllergy] = useState("");
   const [newMedication, setNewMedication] = useState("");
-  const [name, setName] = useState("John Doe");
+  const [name, setName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  const handleAddAllergy = () => {
-    if (newAllergy.trim() && !allergies.includes(newAllergy.trim())) {
-      setAllergies([...allergies, newAllergy.trim()]);
+  const userId = user?.uid || "guest";
+
+  // 🔥 사용자 정보 불러오기
+  useEffect(() => {
+    if (!user) return;
+    
+    const loadUserData = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setMyAllergies(data.allergies || []);
+          setMyMedications(data.medications || []);
+          setName(data.name || user.displayName || "User");
+        } else {
+          setName(user.displayName || "User");
+        }
+      } catch (error) {
+        console.error("데이터 불러오기 실패:", error);
+      }
+    };
+    
+    loadUserData();
+  }, [user, userId]);
+
+  // 🔥 알레르기 추가 (Firebase 저장)
+  const handleAddAllergy = async () => {
+    if (newAllergy.trim() && !myAllergies.includes(newAllergy.trim())) {
+      const updated = [...myAllergies, newAllergy.trim()];
+      setMyAllergies(updated);
       setNewAllergy("");
+      
+      try {
+        await setDoc(doc(db, 'users', userId), {
+          allergies: updated,
+          medications: myMedications,
+          name: name
+        }, { merge: true });
+      } catch (error) {
+        console.error("알레르기 저장 실패:", error);
+      }
     }
   };
 
-  const handleRemoveAllergy = (allergyToRemove) => {
-    setAllergies(allergies.filter(a => a !== allergyToRemove));
+  // 🔥 알레르기 삭제
+  const handleRemoveAllergy = async (allergyToRemove) => {
+    const updated = myAllergies.filter(a => a !== allergyToRemove);
+    setMyAllergies(updated);
+    
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        allergies: updated,
+        medications: myMedications,
+        name: name
+      }, { merge: true });
+    } catch (error) {
+      console.error("알레르기 삭제 실패:", error);
+    }
   };
 
-  const handleAddMedication = () => {
-    if (newMedication.trim() && !medications.includes(newMedication.trim())) {
-      setMedications([...medications, newMedication.trim()]);
+  // 🔥 약 추가
+  const handleAddMedication = async () => {
+    if (newMedication.trim() && !myMedications.includes(newMedication.trim())) {
+      const updated = [...myMedications, newMedication.trim()];
+      setMyMedications(updated);
       setNewMedication("");
+      
+      try {
+        await setDoc(doc(db, 'users', userId), {
+          allergies: myAllergies,
+          medications: updated,
+          name: name
+        }, { merge: true });
+      } catch (error) {
+        console.error("약 저장 실패:", error);
+      }
     }
   };
 
-  const handleRemoveMedication = (medToRemove) => {
-    setMedications(medications.filter(m => m !== medToRemove));
+  // 🔥 약 삭제
+  const handleRemoveMedication = async (medToRemove) => {
+    const updated = myMedications.filter(m => m !== medToRemove);
+    setMyMedications(updated);
+    
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        allergies: myAllergies,
+        medications: updated,
+        name: name
+      }, { merge: true });
+    } catch (error) {
+      console.error("약 삭제 실패:", error);
+    }
   };
 
   const copyProfileLink = () => {
@@ -1576,7 +1727,13 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden shrink-0">
-              <div className="w-full h-full flex items-center justify-center bg-[#198F51]/10 text-[#198F51] font-bold text-xl">JD</div>
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-[#198F51]/10 text-[#198F51] font-bold text-xl">
+                {name.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
@@ -1608,7 +1765,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
                 <Share2 size={18} />
               </button>
             </div>
-            <p className="text-sm text-gray-500">Foreign Resident (E-7)</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center">
@@ -1636,7 +1793,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
         
         {/* Allergy List */}
         <div className="flex flex-wrap gap-2 mb-3">
-          {allergies.map(allergy => (
+          {myAllergies.map(allergy => (
             <span key={allergy} className="bg-white text-yellow-800 text-xs font-bold px-3 py-1.5 rounded-lg border border-yellow-200 flex items-center gap-2">
               {allergy}
               <button onClick={() => handleRemoveAllergy(allergy)}>
@@ -1644,7 +1801,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
               </button>
             </span>
           ))}
-          {allergies.length === 0 && (
+          {myAllergies.length === 0 && (
             <span className="text-xs text-gray-400 italic">No allergies added yet.</span>
           )}
         </div>
@@ -1678,7 +1835,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
         
         {/* Meds List */}
         <div className="flex flex-wrap gap-2 mb-3">
-          {medications.map(med => (
+          {myMedications.map(med => (
             <span key={med} className="bg-white text-[#198F51] text-xs font-bold px-3 py-1.5 rounded-lg border border-[#198F51]/20 flex items-center gap-2">
               {med}
               <button onClick={() => handleRemoveMedication(med)}>
@@ -1686,7 +1843,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
               </button>
             </span>
           ))}
-          {medications.length === 0 && (
+          {myMedications.length === 0 && (
             <span className="text-xs text-gray-400 italic">No medications added yet.</span>
           )}
         </div>
@@ -1728,6 +1885,16 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
                  </button>
              ))}
          </div>
+      </div>
+
+      {/* 🔥 로그아웃 버튼 추가 */}
+      <div className="mt-6">
+        <button 
+          onClick={onLogout}
+          className="w-full bg-gray-100 text-gray-700 text-sm font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Logout
+        </button>
       </div>
     </div>
   );
