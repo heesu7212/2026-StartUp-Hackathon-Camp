@@ -3,8 +3,20 @@ import {
   Search, MapPin, Star, BookOpen, User, Phone, Globe, Activity, Heart, 
   ChevronRight, X, ChevronLeft, Flame, Info, Filter, Camera, ScanLine,
   Pill, Stethoscope, Sun, Ear, Bone, Scissors, Siren, ShieldCheck, RefreshCw, Zap, Upload, Plus,
-  Venus, Users, Lock, Edit2, Check, Share2, Mail, LogIn
+  Venus, Users, Lock, Edit2, Check, Share2, Mail, LogIn, ExternalLink, MessageCircle
 } from 'lucide-react';
+
+// ==============================================================================
+// [로고 설정 영역] 
+// ==============================================================================
+
+// 1. 로고 심볼 (로딩 화면용)
+const LOGO_SYMBOL_URL = "https://i.postimg.cc/W1ms6TqB/seukeulinsyas-2026-01-16-014925.png"; 
+
+// 2. 텍스트 로고 (메인 앱 상단용 - 업데이트됨)
+const LOGO_WITH_TEXT_URL = "https://i.postimg.cc/6QPX03zr/Kakao-Talk-20260115-183611067.jpg"; 
+
+// ==============================================================================
 
 
 // --- Custom Icons ---
@@ -29,57 +41,235 @@ const Tooth = ({ size = 24, className = "", color = "currentColor" }) => (
 
 // --- Constants & Data ---
 
-const INSURANCE_INFO = {
-  "NHIS": {
-    title: "National Health Insurance (NHIS)",
-    coverage: "Covers ~70-80% of general treatments.",
-    benefits: "Same price as Korean citizens. Automatic deduction for registered employees.",
-    who: "Registered aliens (ARC holders) residing > 6 months.",
-    tips: "Bring your ARC card. Dental/Cosmetic is usually NOT covered."
+// Updated Flashcard Categories (Removed 'admin' and 'pharmacy')
+const FLASHCARD_CATEGORIES = [
+  { 
+    id: 'general', 
+    label: 'General / Internal', 
+    icon: <Stethoscope className="text-[#198F51]" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-[#198F51]', 
+    textColor: 'text-[#198F51]',
+    borderColor: 'border-[#198F51]/20',
+    procedures: [
+      {
+        title: "Cold / Flu Treatment",
+        steps: [
+          "Register at the front desk with your ARC or Passport.",
+          "Wait for your name to be called.",
+          "Consult with the doctor (describe symptoms).",
+          "Doctor may use a stethoscope or check your throat.",
+          "Receive a prescription paper (Prescription is NOT medicine).",
+          "Go to a nearby pharmacy (Yak-guk) to buy the medicine."
+        ]
+      },
+      {
+        title: "Digestive Issues",
+        steps: [
+          "Explain symptoms (pain location, nausea, diarrhea).",
+          "Doctor might press your stomach to check for pain.",
+          "If severe, they might suggest an Endoscopy (requires appointment).",
+          "Get prescription for medicine.",
+          "Pharmacy will explain when to take meds (usually '30 min after meal')."
+        ]
+      }
+    ]
   },
-  "Travel Ins.": {
-    title: "Travel Insurance",
-    coverage: "Varies by policy (Pay first, Claim later).",
-    benefits: "Covers accidents & sudden illnesses during travel.",
-    who: "Short-term visitors / Tourists.",
-    tips: "Ask for a 'Medical Certificate' & 'Receipt' for reimbursement."
+  { 
+    id: 'dental', 
+    label: 'Dentistry', 
+    icon: <Tooth className="text-purple-500" size={28} color="currentColor"/>, 
+    color: 'bg-white', 
+    activeColor: 'bg-purple-600', 
+    textColor: 'text-purple-700',
+    borderColor: 'border-purple-100',
+    procedures: [
+      {
+        title: "Cavity Treatment",
+        steps: [
+          "X-ray scanning (Panoramic or specific tooth).",
+          "Doctor examines the X-ray.",
+          "Local anesthesia injection (numbing).",
+          "Remove decayed part (drilling sound).",
+          "Fill the tooth with Resin (tooth color) or Gold/Amalgam.",
+          "Bite check to ensure it fits comfortably."
+        ]
+      },
+      {
+        title: "Wisdom Tooth Removal",
+        steps: [
+          "CT Scan to check nerve position.",
+          "Anesthesia (might be stronger).",
+          "Extraction procedure (pressure is normal, pain is not).",
+          "Stitching the gum.",
+          "Bite on gauze for 2 hours to stop bleeding.",
+          "Return after 1 week to remove stitches."
+        ]
+      },
+      {
+        title: "Scaling (Cleaning)",
+        steps: [
+          "covered by NHIS once a year (very cheap ~15,000 KRW).",
+          "Hygienist uses ultrasound tool to remove tartar.",
+          "Water spray and vibrating sensation.",
+          "Takes about 20-30 minutes.",
+          "Gums might bleed slightly afterwards."
+        ]
+      }
+    ]
   },
-  "Private Only": {
-    title: "Private Insurance Only",
-    coverage: "Does NOT accept NHIS.",
-    benefits: "High-end service, shorter wait times, often English-native staff.",
-    who: "Patients seeking premium care or uncovered procedures.",
-    tips: "Check if your private global insurance supports direct billing here."
+  { 
+    id: 'ent', 
+    label: 'ENT (Ears/Nose)', 
+    icon: <Ear className="text-orange-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-orange-600', 
+    textColor: 'text-orange-700',
+    borderColor: 'border-orange-100',
+    procedures: [
+      {
+        title: "Sore Throat / Cough",
+        steps: [
+          "Doctor checks throat with a light.",
+          "Often uses a metal tongue depressor.",
+          "Spray medication directly into throat.",
+          "Nebulizer treatment (breathing steam) for 2-3 mins.",
+          "Receive prescription."
+        ]
+      },
+      {
+        title: "Ear Infection / Cleaning",
+        steps: [
+          "Camera inspection of the ear canal (shown on screen).",
+          "Suction device to clean earwax or pus.",
+          "Infrared light therapy (warm light on ear).",
+          "Avoid water in ear for a few days."
+        ]
+      }
+    ]
   },
-  "Tax Refund": {
-    title: "Tax Refund Available",
-    coverage: "VAT (10%) Refund.",
-    benefits: "Get 10% tax back at the airport for bills > 30,000 KRW.",
-    who: "Tourists (Stay < 6 months).",
-    tips: "Ask for the 'Tax Refund Receipt' at the desk."
+  { 
+    id: 'ortho', 
+    label: 'Orthopedics', 
+    icon: <Bone className="text-slate-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-slate-600', 
+    textColor: 'text-slate-700',
+    borderColor: 'border-slate-100',
+    procedures: [
+      {
+        title: "Sprain / Joint Pain",
+        steps: [
+          "X-ray to check for fractures.",
+          "Doctor manipulation (moving the joint).",
+          "Physical Therapy (Heat pack, electrical stimulation, ultrasound).",
+          "Maybe acupuncture (if it's an oriental clinic).",
+          "Prescription for muscle relaxants and painkillers."
+        ]
+      }
+    ]
   },
-  "Intl. Direct Billing": {
-    title: "International Direct Billing",
-    coverage: "100% or Copay (Depends on provider).",
-    benefits: "Hospital bills your insurance company directly. No out-of-pocket.",
-    who: "Holders of Cigna, Aetna, Tricare, etc.",
-    tips: "Bring your physical insurance card."
+  { 
+    id: 'derma', 
+    label: 'Dermatology', 
+    icon: <Sun className="text-yellow-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-yellow-500', 
+    textColor: 'text-yellow-700',
+    borderColor: 'border-yellow-100',
+    procedures: [
+      {
+        title: "Acne / Skin Rash",
+        steps: [
+          "Visual inspection (sometimes with magnifier).",
+          "Determine cause (allergy, bacteria, hormonal).",
+          "Prescription for oral medicine and topical ointment.",
+          "Laser treatment or extrusion (optional, extra cost)."
+        ]
+      }
+    ]
   },
-  "NHIS (Partially)": {
-    title: "NHIS (Partial Coverage)",
-    coverage: "Covers basic treatments only.",
-    benefits: "Scaling (cleaning) is covered once a year.",
-    who: "NHIS holders.",
-    tips: "Implants and whitening are excluded."
+  { 
+    id: 'obgyn', 
+    label: 'OBGYN', 
+    icon: <Venus className="text-pink-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-pink-500', 
+    textColor: 'text-pink-700',
+    borderColor: 'border-pink-100',
+    procedures: [
+      {
+        title: "Routine Checkup / Pap Smear",
+        steps: [
+          "Consultation about cycle and symptoms.",
+          "Ultrasound (internal or external) to check uterus/ovaries.",
+          "Pap Smear (screening for cervical cancer) - swift and slightly uncomfortable.",
+          "Results usually available in 3-7 days via text/email."
+        ]
+      },
+      {
+        title: "Pregnancy Check",
+        steps: [
+          "Urine test confirms pregnancy.",
+          "Ultrasound to check fetal heartbeat (visible around 6 weeks).",
+          "Receive 'Pregnancy Confirmation' for government support (Voucher).",
+          "Schedule regular prenatal visits."
+        ]
+      }
+    ]
   },
-  "All Types": {
-    title: "All Insurance Types Accepted",
-    coverage: "NHIS, Travel, Private, Direct Billing.",
-    benefits: "Most flexible payment options.",
-    who: "Everyone.",
-    tips: "Visit the International Healthcare Center for assistance."
+  { 
+    id: 'surgery', 
+    label: 'Surgery', 
+    icon: <Scissors className="text-cyan-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-cyan-600', 
+    textColor: 'text-cyan-700',
+    borderColor: 'border-cyan-100',
+    procedures: [
+      {
+        title: "Wound Treatment (Sutures)",
+        steps: [
+          "Thorough cleaning and disinfection of the wound.",
+          "Local anesthesia injection near the wound.",
+          "Suturing (Stitching) the wound.",
+          "Applying dressing/bandage.",
+          "Return in 7-14 days to remove stitches."
+        ]
+      },
+      {
+        title: "Abscess / Cyst Removal",
+        steps: [
+          "Ultrasound may be used to check size.",
+          "Incision and drainage (I&D) under local anesthesia.",
+          "Removing the cyst sac if necessary.",
+          "Prescription for antibiotics to prevent infection."
+        ]
+      }
+    ]
+  },
+  { 
+    id: 'emergency', 
+    label: 'Emergency / Urgent', 
+    icon: <Siren className="text-red-500" size={28} />, 
+    color: 'bg-white', 
+    activeColor: 'bg-red-600', 
+    textColor: 'text-red-700',
+    borderColor: 'border-red-100',
+    procedures: [
+      {
+        title: "Emergency Room (ER)",
+        steps: [
+          "Go to the ER reception (Eung-geup-sil).",
+          "Triage: Nurse checks vitals to determine urgency.",
+          "Wait (Critical patients go first).",
+          "Doctor examination -> Tests (Blood, CT, X-ray).",
+          "Payment is higher than regular visits."
+        ]
+      }
+    ]
   }
-};
+];
 
 const HOSPITALS = [
   {
@@ -263,272 +453,6 @@ const REVIEWS_DB = [
   { id: 8, hospitalId: 14, user: "Chloe P.", nationality: "France", rating: 4, comment: "Good clinic, but you need to book 2 weeks in advance.", tags: ["Popular", "Language: Good"] },
 ];
 
-const FLASHCARD_CATEGORIES = [
-  { 
-    id: 'general', 
-    label: 'General / Internal', 
-    icon: <Stethoscope className="text-blue-500" size={28} />, 
-    color: 'bg-blue-50', 
-    activeColor: 'bg-blue-600', 
-    textColor: 'text-blue-700',
-    procedures: [
-      {
-        title: "Cold / Flu Treatment",
-        steps: [
-          "Register at the front desk with your ARC or Passport.",
-          "Wait for your name to be called.",
-          "Consult with the doctor (describe symptoms).",
-          "Doctor may use a stethoscope or check your throat.",
-          "Receive a prescription paper (Prescription is NOT medicine).",
-          "Go to a nearby pharmacy (Yak-guk) to buy the medicine."
-        ]
-      },
-      {
-        title: "Digestive Issues",
-        steps: [
-          "Explain symptoms (pain location, nausea, diarrhea).",
-          "Doctor might press your stomach to check for pain.",
-          "If severe, they might suggest an Endoscopy (requires appointment).",
-          "Get prescription for medicine.",
-          "Pharmacy will explain when to take meds (usually '30 min after meal')."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'dental', 
-    label: 'Dentistry', 
-    icon: <Tooth className="text-purple-500" size={28} color="currentColor"/>, 
-    color: 'bg-purple-50', 
-    activeColor: 'bg-purple-600', 
-    textColor: 'text-purple-700',
-    procedures: [
-      {
-        title: "Cavity Treatment",
-        steps: [
-          "X-ray scanning (Panoramic or specific tooth).",
-          "Doctor examines the X-ray.",
-          "Local anesthesia injection (numbing).",
-          "Remove decayed part (drilling sound).",
-          "Fill the tooth with Resin (tooth color) or Gold/Amalgam.",
-          "Bite check to ensure it fits comfortably."
-        ]
-      },
-      {
-        title: "Wisdom Tooth Removal",
-        steps: [
-          "CT Scan to check nerve position.",
-          "Anesthesia (might be stronger).",
-          "Extraction procedure (pressure is normal, pain is not).",
-          "Stitching the gum.",
-          "Bite on gauze for 2 hours to stop bleeding.",
-          "Return after 1 week to remove stitches."
-        ]
-      },
-      {
-        title: "Scaling (Cleaning)",
-        steps: [
-          "covered by NHIS once a year (very cheap ~15,000 KRW).",
-          "Hygienist uses ultrasound tool to remove tartar.",
-          "Water spray and vibrating sensation.",
-          "Takes about 20-30 minutes.",
-          "Gums might bleed slightly afterwards."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'ent', 
-    label: 'ENT (Ears/Nose)', 
-    icon: <Ear className="text-orange-500" size={28} />, 
-    color: 'bg-orange-50', 
-    activeColor: 'bg-orange-600', 
-    textColor: 'text-orange-700',
-    procedures: [
-      {
-        title: "Sore Throat / Cough",
-        steps: [
-          "Doctor checks throat with a light.",
-          "Often uses a metal tongue depressor.",
-          "Spray medication directly into throat.",
-          "Nebulizer treatment (breathing steam) for 2-3 mins.",
-          "Receive prescription."
-        ]
-      },
-      {
-        title: "Ear Infection / Cleaning",
-        steps: [
-          "Camera inspection of the ear canal (shown on screen).",
-          "Suction device to clean earwax or pus.",
-          "Infrared light therapy (warm light on ear).",
-          "Avoid water in ear for a few days."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'ortho', 
-    label: 'Orthopedics', 
-    icon: <Bone className="text-slate-500" size={28} />, 
-    color: 'bg-slate-50', 
-    activeColor: 'bg-slate-600', 
-    textColor: 'text-slate-700',
-    procedures: [
-      {
-        title: "Sprain / Joint Pain",
-        steps: [
-          "X-ray to check for fractures.",
-          "Doctor manipulation (moving the joint).",
-          "Physical Therapy (Heat pack, electrical stimulation, ultrasound).",
-          "Maybe acupuncture (if it's an oriental clinic).",
-          "Prescription for muscle relaxants and painkillers."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'derma', 
-    label: 'Dermatology', 
-    icon: <Sun className="text-yellow-500" size={28} />, 
-    color: 'bg-yellow-50', 
-    activeColor: 'bg-yellow-500', 
-    textColor: 'text-yellow-700',
-    procedures: [
-      {
-        title: "Acne / Skin Rash",
-        steps: [
-          "Visual inspection (sometimes with magnifier).",
-          "Determine cause (allergy, bacteria, hormonal).",
-          "Prescription for oral medicine and topical ointment.",
-          "Laser treatment or extrusion (optional, extra cost)."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'pharmacy', 
-    label: 'Pharmacy', 
-    icon: <Pill className="text-green-500" size={28} />, 
-    color: 'bg-green-50', 
-    activeColor: 'bg-green-600', 
-    textColor: 'text-green-700',
-    procedures: [
-      {
-        title: "Buying Prescription Meds",
-        steps: [
-          "Give the prescription paper to the pharmacist.",
-          "Wait for them to prepare the packets.",
-          "Pharmacist explains dosage (e.g., '3 times a day, after meals').",
-          "Pay (NHIS covers a significant portion)."
-        ]
-      },
-      {
-        title: "Buying OTC Meds",
-        steps: [
-          "Describe symptoms (Headache, period pain, bandage).",
-          "Pharmacist recommends a product.",
-          "Pay full price (usually cheap, 3,000 ~ 6,000 KRW)."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'admin', 
-    label: 'Admin / Insurance', 
-    icon: <BookOpen className="text-indigo-500" size={28} />, 
-    color: 'bg-indigo-50', 
-    activeColor: 'bg-indigo-600', 
-    textColor: 'text-indigo-700',
-    procedures: [
-      {
-        title: "Getting a Receipt",
-        steps: [
-          "Ask at the front desk *after* payment.",
-          "For insurance claims, ask for 'Jin-ryo-bi-se-bu-nae-yeok-seo'.",
-          "Diagnosis Certificate (Jin-dan-seo) costs extra."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'obgyn', 
-    label: 'OBGYN', 
-    icon: <Venus className="text-pink-500" size={28} />, 
-    color: 'bg-pink-50', 
-    activeColor: 'bg-pink-500', 
-    textColor: 'text-pink-700',
-    procedures: [
-      {
-        title: "Routine Checkup / Pap Smear",
-        steps: [
-          "Consultation about cycle and symptoms.",
-          "Ultrasound (internal or external) to check uterus/ovaries.",
-          "Pap Smear (screening for cervical cancer) - swift and slightly uncomfortable.",
-          "Results usually available in 3-7 days via text/email."
-        ]
-      },
-      {
-        title: "Pregnancy Check",
-        steps: [
-          "Urine test confirms pregnancy.",
-          "Ultrasound to check fetal heartbeat (visible around 6 weeks).",
-          "Receive 'Pregnancy Confirmation' for government support (Voucher).",
-          "Schedule regular prenatal visits."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'surgery', 
-    label: 'Surgery', 
-    icon: <Scissors className="text-cyan-500" size={28} />, 
-    color: 'bg-cyan-50', 
-    activeColor: 'bg-cyan-600', 
-    textColor: 'text-cyan-700',
-    procedures: [
-      {
-        title: "Wound Treatment (Sutures)",
-        steps: [
-          "Thorough cleaning and disinfection of the wound.",
-          "Local anesthesia injection near the wound.",
-          "Suturing (Stitching) the wound.",
-          "Applying dressing/bandage.",
-          "Return in 7-14 days to remove stitches."
-        ]
-      },
-      {
-        title: "Abscess / Cyst Removal",
-        steps: [
-          "Ultrasound may be used to check size.",
-          "Incision and drainage (I&D) under local anesthesia.",
-          "Removing the cyst sac if necessary.",
-          "Prescription for antibiotics to prevent infection."
-        ]
-      }
-    ]
-  },
-  { 
-    id: 'emergency', 
-    label: 'Emergency / Urgent', 
-    icon: <Siren className="text-red-500" size={28} />, 
-    color: 'bg-red-50', 
-    activeColor: 'bg-red-600', 
-    textColor: 'text-red-700',
-    procedures: [
-      {
-        title: "Emergency Room (ER)",
-        steps: [
-          "Go to the ER reception (Eung-geup-sil).",
-          "Triage: Nurse checks vitals to determine urgency.",
-          "Wait (Critical patients go first).",
-          "Doctor examination -> Tests (Blood, CT, X-ray).",
-          "Payment is higher than regular visits."
-        ]
-      }
-    ]
-  }
-];
-
 const CATEGORIES = ["All", "General", "Dental", "Dermatology", "ENT", "Orthopedic", "Internal Med", "OBGYN", "Surgery"];
 
 // Map simple names to IDs for color lookup
@@ -560,7 +484,7 @@ const getCategoryColor = (catName) => {
       active: category.activeColor + " text-white shadow-md border-transparent"
     };
   }
-  return { bg: "bg-white border-gray-200", text: "text-teal-600", active: "bg-teal-600 text-white" };
+  return { bg: "bg-white border-gray-200", text: "text-[#198F51]", active: "bg-[#198F51] text-white" };
 };
 
 
@@ -568,7 +492,7 @@ const getCategoryColor = (catName) => {
 
 const Badge = ({ children, color = "blue", onClick }) => {
   const colors = {
-    blue: "bg-blue-100 text-blue-800",
+    blue: "bg-[#198F51]/10 text-[#198F51]", // Blue mapped to Green theme
     green: "bg-green-100 text-green-800",
     purple: "bg-purple-100 text-purple-800",
     gray: "bg-gray-100 text-gray-800",
@@ -586,54 +510,18 @@ const Badge = ({ children, color = "blue", onClick }) => {
 
 // --- Modal Component for Insurance ---
 const InsuranceModal = ({ type, onClose }) => {
-  const info = INSURANCE_INFO[type] || { 
-    title: type, 
-    coverage: "No specific data available.", 
-    benefits: "Ask the hospital desk for details.", 
-    who: "General patients.", 
-    tips: "-" 
-  };
-
+  // Simple modal to show when user clicks badges in other screens
+  // For the main Insurance Tab, we use InsuranceView
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100">
-        <div className="bg-teal-600 p-4 flex justify-between items-center text-white">
-          <h3 className="font-bold text-lg flex items-center gap-2">
-            <ShieldCheck size={20} /> Insurance Guide
-          </h3>
-          <button onClick={onClose}><X size={20} /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="text-center mb-4">
-            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold">
-              {info.title}
-            </span>
-          </div>
-          
-          <div className="space-y-3 text-sm text-gray-700">
-             <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-bold text-teal-700 text-xs uppercase mb-1">Coverage Scope</p>
-                <p>{info.coverage}</p>
-             </div>
-             <div>
-                <p className="font-bold text-gray-900 text-xs uppercase mb-1">Benefits</p>
-                <p>{info.benefits}</p>
-             </div>
-             <div>
-                <p className="font-bold text-gray-900 text-xs uppercase mb-1">Who is eligible?</p>
-                <p>{info.who}</p>
-             </div>
-             <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                <p className="font-bold text-yellow-800 text-xs uppercase mb-1 flex items-center gap-1"><Info size={12}/> Tips</p>
-                <p className="text-yellow-900">{info.tips}</p>
-             </div>
-          </div>
-        </div>
-        <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
-          <button onClick={onClose} className="text-teal-600 font-bold text-sm hover:underline">
-            Close
-          </button>
-        </div>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
+        <h3 className="font-bold text-lg mb-2 text-[#198F51]">Insurance Info</h3>
+        <p className="text-gray-600 text-sm mb-4">
+          Please check the <b>Insurance Tab</b> for detailed guidelines on {type} and NHIS procedures.
+        </p>
+        <button onClick={onClose} className="text-[#198F51] font-bold text-sm hover:underline">
+          Close
+        </button>
       </div>
     </div>
   );
@@ -649,12 +537,12 @@ const SplashScreen = ({ onFinish }) => {
   }, [onFinish]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-teal-500 text-white">
-      <div className="animate-bounce mb-4">
-        <ShieldCheck size={64} strokeWidth={1.5} />
+    <div className="flex flex-col items-center justify-center h-screen bg-[#198F51] text-white">
+      <div className="animate-bounce mb-6 bg-white p-4 rounded-3xl shadow-xl">
+        <img src={LOGO_SYMBOL_URL} alt="Kare Logo" className="w-20 h-20 object-contain" />
       </div>
-      <h1 className="text-3xl font-bold tracking-wider mb-2">Sick&Seek</h1>
-      <p className="text-teal-100 text-sm font-medium">Kare for everyone</p>
+      <h1 className="text-3xl font-bold tracking-wider mb-2">Kare</h1>
+      <p className="text-green-100 text-sm font-medium">Your Health, Our Priority</p>
       <div className="mt-8 w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin opacity-80"></div>
     </div>
   );
@@ -677,11 +565,12 @@ const LoginPage = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#FFFCF4] px-4 relative">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-green-50">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 text-teal-600 mb-4">
-            <User size={32} />
+          {/* Default User Icon */}
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4 bg-[#198F51]/10 text-[#198F51] rounded-full p-4">
+             <User size={48} />
           </div>
           <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
           <p className="text-gray-500 text-sm mt-1">Sign in to access your medical guide</p>
@@ -699,7 +588,7 @@ const LoginPage = ({ onLogin }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#198F51] focus:border-[#198F51] transition-colors"
                 placeholder="user@example.com"
               />
             </div>
@@ -716,7 +605,7 @@ const LoginPage = ({ onLogin }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#198F51] focus:border-[#198F51] transition-colors"
                 placeholder="••••••••"
               />
             </div>
@@ -725,7 +614,7 @@ const LoginPage = ({ onLogin }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors disabled:opacity-70"
+            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#198F51] hover:bg-[#147a43] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#198F51] transition-colors disabled:opacity-70"
           >
             {isLoading ? (
               <RefreshCw size={20} className="animate-spin" />
@@ -739,7 +628,7 @@ const LoginPage = ({ onLogin }) => {
 
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            Don't have an account? <span className="text-teal-600 font-bold cursor-pointer hover:underline">Sign up</span>
+            Don't have an account? <span className="text-[#198F51] font-bold cursor-pointer hover:underline">Sign up</span>
           </p>
         </div>
       </div>
@@ -773,25 +662,31 @@ function SickAndSeekApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center font-sans">
+    <div className="min-h-screen bg-[#FFFCF4] flex justify-center font-sans">
       {/* Mobile Wrapper */}
-      <div className="w-full max-w-md bg-white shadow-xl min-h-screen flex flex-col relative overflow-hidden">
+      <div className="w-full max-w-md bg-[#FFFCF4] shadow-xl h-screen flex flex-col relative overflow-hidden">
         
         {/* Header */}
-        <header className="px-6 py-5 bg-teal-600 text-white shadow-md z-10">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Sick&Seek</h1>
-              <p className="text-xs text-teal-100 opacity-90">Kare for everyone</p>
+        <header className="px-6 py-4 bg-[#198F51] text-white shadow-md z-10 flex justify-between items-center">
+          <div>
+            {/* Replaced Text with Brand Logo Image */}
+            <div className="h-10 mb-1">
+                <img src={LOGO_WITH_TEXT_URL} alt="Kare" className="h-full object-contain" />
             </div>
-            <div className="bg-teal-500 p-2 rounded-full">
-              <User size={20} />
-            </div>
+            <p className="text-xs text-green-100 opacity-90 pl-1">Medical Care for Everyone</p>
+          </div>
+          
+          {/* User Profile - Click to go to My Health */}
+          <div 
+            onClick={() => setActiveTab('profile')}
+            className="bg-[#198F51] brightness-110 p-2 rounded-full border border-white/20 cursor-pointer hover:bg-green-700 transition-colors"
+          >
+            <User size={20} />
           </div>
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto pb-20 scrollbar-hide">
+        <main className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
           {selectedHospital ? (
             <HospitalDetail 
               hospital={selectedHospital} 
@@ -806,9 +701,9 @@ function SickAndSeekApp() {
                   onShowInsurance={openInsuranceModal} 
                 />
               )}
-              {activeTab === 'scan' && <ScanView />}
               {activeTab === 'cards' && <FlashcardView />}
               {activeTab === 'matching' && <MatchingView />}
+              {activeTab === 'insurance' && <InsuranceView />}
               {activeTab === 'profile' && (
                 <ProfileView 
                   onShowInsurance={openInsuranceModal} 
@@ -822,34 +717,47 @@ function SickAndSeekApp() {
           )}
         </main>
 
-        {/* Bottom Navigation */}
-        <nav className="absolute bottom-0 w-full bg-white border-t border-gray-200 py-3 px-6 flex justify-between items-center z-20">
+        {/* Bottom Navigation (Sticky at bottom) */}
+        <nav className="absolute bottom-0 w-full bg-white border-t border-gray-200 h-[80px] flex items-center justify-between px-2 z-20">
+          
+          {/* 1. Procedures */}
           <NavItem 
-            icon={<Search size={22} />} 
-            label="Find" 
-            isActive={activeTab === 'home'} 
-            onClick={() => { setActiveTab('home'); setSelectedHospital(null); }} 
-          />
-          <NavItem 
-            icon={<BookOpen size={22} />} 
+            icon={<BookOpen size={24} />} 
             label="Procedures" 
             isActive={activeTab === 'cards'} 
             onClick={() => { setActiveTab('cards'); setSelectedHospital(null); }} 
           />
-           <NavItem 
-            icon={<Camera size={22} />} 
-            label="Scan" 
-            isActive={activeTab === 'scan'} 
-            onClick={() => { setActiveTab('scan'); setSelectedHospital(null); }} 
-          />
+
+          {/* 2. Matching */}
           <NavItem 
-            icon={<Users size={22} />} 
+            icon={<Users size={24} />} 
             label="Matching" 
             isActive={activeTab === 'matching'} 
             onClick={() => { setActiveTab('matching'); setSelectedHospital(null); }} 
           />
+
+          {/* 3. Find (Center Main - Circle) */}
+          <div className="relative -top-6">
+            <button 
+              onClick={() => { setActiveTab('home'); setSelectedHospital(null); }}
+              className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-4 border-[#FFFCF4] transition-transform ${activeTab === 'home' ? 'bg-[#198F51] text-white scale-110' : 'bg-gray-100 text-gray-400'}`}
+            >
+              <Search size={28} />
+            </button>
+            <span className={`text-[10px] font-bold absolute -bottom-4 left-1/2 transform -translate-x-1/2 ${activeTab === 'home' ? 'text-[#198F51]' : 'text-gray-400'}`}>Find</span>
+          </div>
+
+          {/* 4. Insurance */}
           <NavItem 
-            icon={<Activity size={22} />} 
+            icon={<ShieldCheck size={24} />} 
+            label="Insurance" 
+            isActive={activeTab === 'insurance'} 
+            onClick={() => { setActiveTab('insurance'); setSelectedHospital(null); }} 
+          />
+
+          {/* 5. My Health */}
+          <NavItem 
+            icon={<Activity size={24} />} 
             label="My Health" 
             isActive={activeTab === 'profile'} 
             onClick={() => { setActiveTab('profile'); setSelectedHospital(null); }} 
@@ -900,7 +808,7 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
         <input 
           type="text" 
           placeholder="Search symptoms (e.g. Headache), clinics..." 
-          className="w-full pl-10 pr-4 py-3 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-shadow"
+          className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#198F51] transition-shadow shadow-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -992,7 +900,275 @@ function HomeView({ onSelectHospital, onShowInsurance }) {
   );
 }
 
-// --- NEW SCAN VIEW (Image Upload & AR Overlay) ---
+// --- Insurance View (Revamped for NHIS Guide) ---
+function InsuranceView() {
+  return (
+    <div className="p-5 min-h-full">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <ShieldCheck className="text-[#198F51]" /> NHIS Guide
+        </h2>
+        <p className="text-sm text-gray-500">How to use Korea's National Health Insurance</p>
+      </div>
+
+      {/* Basic Procedures - Step by Step */}
+      <div className="space-y-6 mb-8">
+        <div className="relative border-l-2 border-gray-200 ml-3 space-y-8">
+          
+          {/* Step 1 */}
+          <div className="relative pl-8">
+            <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
+            <h3 className="font-bold text-gray-800 text-lg">1. Alien Registration</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              You must have an <b>Alien Registration Card (ARC)</b>. 
+              NHIS enrollment is mandatory for foreigners staying 6+ months.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="relative pl-8">
+            <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
+            <h3 className="font-bold text-gray-800 text-lg">2. Automatic Enrollment</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              If you work, your employer signs you up. If you are a student or not working, you will receive a bill for "Local Subscriber" automatically.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="relative pl-8">
+            <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
+            <h3 className="font-bold text-gray-800 text-lg">3. Paying Premiums</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Pay monthly (~150,000 KRW for local). <br/>
+              <span className="text-red-500 text-xs font-bold">Warning:</span> Visa extension is denied if you have unpaid premiums.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div className="relative pl-8">
+            <div className="absolute -left-[9px] top-0 w-5 h-5 rounded-full bg-[#198F51] border-4 border-[#FFFCF4]"></div>
+            <h3 className="font-bold text-gray-800 text-lg">4. Visiting Hospitals</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Just show your ARC at the desk. You pay only <b>10~30%</b> of the total cost.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Official Contacts */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
+        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Phone size={18} className="text-[#198F51]"/> Official NHIS Contacts
+        </h3>
+        
+        <div className="space-y-3">
+          <a 
+            href="https://www.nhis.or.kr/english/index.do" 
+            target="_blank" 
+            rel="noreferrer"
+            className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+          >
+            <span className="text-sm font-bold text-gray-700">Official Website (English)</span>
+            <ExternalLink size={16} className="text-gray-400"/>
+          </a>
+
+          <div className="grid grid-cols-2 gap-3">
+            <a href="tel:033-811-2000" className="flex flex-col items-center justify-center p-3 bg-[#198F51]/10 rounded-xl hover:bg-[#198F51]/20 transition-colors text-center">
+              <span className="text-xs text-[#198F51] font-bold mb-1">English / Chinese</span>
+              <span className="text-lg font-bold text-[#198F51]">033-811-2000</span>
+            </a>
+            <a href="tel:1577-1000" className="flex flex-col items-center justify-center p-3 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-center">
+              <span className="text-xs text-gray-500 font-bold mb-1">Korean General</span>
+              <span className="text-lg font-bold text-gray-700">1577-1000</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Locked Premium Feature - 1:1 Consultation */}
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+         {/* Background Content (Blurred) */}
+         <div className="p-6 filter blur-[2px] opacity-50 select-none">
+            <div className="flex items-center gap-3 mb-4">
+               <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+               <div className="h-4 bg-gray-200 w-32 rounded"></div>
+            </div>
+            <div className="space-y-2">
+               <div className="h-3 bg-gray-100 w-full rounded"></div>
+               <div className="h-3 bg-gray-100 w-3/4 rounded"></div>
+            </div>
+         </div>
+
+         {/* Lock Overlay */}
+         <div className="absolute inset-0 bg-gradient-to-br from-[#198F51]/90 to-[#147a43]/90 flex flex-col items-center justify-center text-white p-6 text-center">
+            <div className="bg-white/20 p-3 rounded-full mb-3 backdrop-blur-sm">
+               <MessageCircle size={28} className="text-white"/>
+            </div>
+            <h3 className="font-bold text-lg mb-1">1:1 Insurance Concierge</h3>
+            <p className="text-xs text-green-100 mb-4 opacity-90">
+               Chat with a professional agent to solve complex insurance issues.
+            </p>
+            <button className="bg-white text-[#198F51] text-xs font-bold py-2.5 px-6 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
+               Unlock Premium
+            </button>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+function FlashcardView() {
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedProcedure, setSelectedProcedure] = useState(null);
+  const [showScan, setShowScan] = useState(false); // Toggle Scan View
+
+  // 1. Scan View Mode (Integrated inside Procedures)
+  if (showScan) {
+    return (
+      <div className="min-h-full flex flex-col">
+        <div className="p-4 flex items-center border-b border-gray-100 bg-white sticky top-0 z-10">
+          <button onClick={() => setShowScan(false)} className="mr-3 p-2 bg-gray-50 rounded-full text-gray-600">
+            <ChevronLeft size={20} />
+          </button>
+          <span className="font-bold text-gray-800">Smart Scan</span>
+        </div>
+        <ScanView />
+      </div>
+    );
+  }
+
+  // 2. Level 1: Category Selection Grid
+  if (!selectedCategory) {
+    return (
+      <div className="p-5 min-h-full">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Medical Procedures</h2>
+          <p className="text-sm text-gray-500">Select a category to learn about treatments.</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {FLASHCARD_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat)}
+              className={`${cat.color} p-5 rounded-2xl border ${cat.borderColor || 'border-transparent'} hover:border-[#198F51] hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 h-36 bg-white`}
+            >
+              <div className="bg-[#198F51]/10 p-3 rounded-full shadow-sm">
+                {cat.icon}
+              </div>
+              <span className={`font-bold text-sm text-center ${cat.textColor}`}>
+                {cat.label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Scan Feature moved here */}
+        <div 
+          onClick={() => setShowScan(true)}
+          className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl p-5 text-white shadow-lg flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-transform"
+        >
+          <div>
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <ScanLine size={20} className="text-[#198F51]" /> Smart Scan
+            </h3>
+            <p className="text-xs text-gray-300 mt-1">Translate medicine bags & prescriptions</p>
+          </div>
+          <div className="bg-white/10 p-2 rounded-lg">
+            <ChevronRight size={20} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Level 2: Procedure List for Category
+  if (selectedCategory && !selectedProcedure) {
+    return (
+      <div className={`p-5 min-h-full bg-white transition-colors duration-500`}>
+        <div className="flex items-center mb-6">
+          <button 
+            onClick={() => setSelectedCategory(null)}
+            className="mr-3 p-2 bg-gray-100 rounded-full shadow-sm text-gray-600 hover:bg-gray-200"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <h2 className={`text-xl font-bold ${selectedCategory.textColor}`}>
+              {selectedCategory.label}
+            </h2>
+            <p className="text-xs text-gray-500 opacity-80">Common Procedures</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {selectedCategory.procedures ? (
+            selectedCategory.procedures.map((proc, idx) => (
+              <div 
+                key={idx}
+                onClick={() => setSelectedProcedure(proc)}
+                className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm flex justify-between items-center cursor-pointer hover:shadow-md transition-all"
+              >
+                <span className="font-bold text-gray-800">{proc.title}</span>
+                <ChevronRight size={20} className="text-gray-300" />
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-white/50 rounded-xl">
+              <p className="text-gray-500">No procedure data available.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Level 3: Procedure Detail (Step-by-Step)
+  return (
+    <div className="p-5 min-h-full bg-white">
+       <div className="flex items-center mb-6">
+          <button 
+            onClick={() => setSelectedProcedure(null)}
+            className="mr-3 p-2 bg-gray-100 rounded-full shadow-sm text-gray-600 hover:bg-gray-200"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-gray-800 leading-tight">
+              {selectedProcedure.title}
+            </h2>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className={`p-4 rounded-xl ${selectedCategory.color} border border-transparent`}>
+             <h3 className={`font-bold mb-2 flex items-center gap-2 ${selectedCategory.textColor}`}>
+               <Info size={18}/> Procedure Steps
+             </h3>
+             <div className="relative border-l-2 border-gray-300 ml-2 space-y-6 py-2">
+                {selectedProcedure.steps.map((step, idx) => (
+                  <div key={idx} className="relative pl-6">
+                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white ${selectedCategory.activeColor}`}></div>
+                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                      {step}
+                    </p>
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-xl text-center">
+            <p className="text-xs text-gray-400 mb-2">Is this procedure covered by insurance?</p>
+            <button className="bg-[#198F51] text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm">
+              Check Insurance Guide
+            </button>
+          </div>
+        </div>
+    </div>
+  );
+}
+
+// --- NEW SCAN VIEW (Sub-component of FlashcardView) ---
 function ScanView() {
   const [scanningState, setScanningState] = useState('idle'); // idle, scanning, result
   const [selectedImage, setSelectedImage] = useState(null);
@@ -1022,14 +1198,7 @@ function ScanView() {
   };
 
   return (
-    <div className="p-5 min-h-full flex flex-col items-center">
-       <div className="mb-6 w-full">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <ScanLine className="text-teal-600"/> Smart Scan
-          </h2>
-          <p className="text-sm text-gray-500">Analyze prescriptions or medicine bags.</p>
-      </div>
-
+    <div className="p-5 flex flex-col items-center flex-1 justify-center min-h-[60vh]">
       <input 
         type="file" 
         accept="image/*" 
@@ -1042,10 +1211,10 @@ function ScanView() {
         <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xs gap-6">
            <div 
              onClick={triggerFileInput}
-             className="w-64 h-80 border-4 border-dashed border-gray-300 rounded-3xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 hover:border-teal-400 cursor-pointer transition-all group"
+             className="w-64 h-80 border-4 border-dashed border-gray-300 rounded-3xl flex flex-col items-center justify-center bg-white hover:bg-gray-50 hover:border-[#198F51] cursor-pointer transition-all group shadow-sm"
            >
-             <Upload size={48} className="text-gray-400 group-hover:text-teal-500 mb-4 transition-colors"/>
-             <p className="text-gray-400 font-bold group-hover:text-teal-600">Upload Image</p>
+             <Upload size={48} className="text-gray-400 group-hover:text-[#198F51] mb-4 transition-colors"/>
+             <p className="text-gray-400 font-bold group-hover:text-[#198F51]">Upload Image</p>
              <p className="text-xs text-gray-300 mt-2 px-6 text-center">Tap to select your photo of medicine</p>
            </div>
            <p className="text-xs text-center text-gray-400">
@@ -1064,8 +1233,8 @@ function ScanView() {
              
              {/* Scan Overlay */}
              <div className="absolute inset-0 bg-black/20 z-10"></div>
-             <ScanLine className="text-teal-400 animate-pulse z-20" size={64} />
-             <div className="absolute inset-x-0 h-1 bg-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.8)] z-20 animate-[scan_2s_ease-in-out_infinite] top-0"></div>
+             <ScanLine className="text-[#198F51] animate-pulse z-20" size={64} />
+             <div className="absolute inset-x-0 h-1 bg-[#198F51] shadow-[0_0_15px_rgba(25,143,81,0.8)] z-20 animate-[scan_2s_ease-in-out_infinite] top-0"></div>
              <p className="absolute bottom-10 z-20 text-white font-bold animate-bounce bg-black/50 px-3 py-1 rounded-full text-xs backdrop-blur-sm">Analyzing Image...</p>
            </div>
         </div>
@@ -1073,9 +1242,9 @@ function ScanView() {
 
       {scanningState === 'result' && (
         <div className="w-full h-full flex flex-col items-center animate-fade-in">
-           <div className="bg-teal-50 border border-teal-200 px-4 py-2 rounded-full flex items-center gap-2 mb-4">
-             <RefreshCw className="text-teal-600 animate-spin-slow" size={14} />
-             <span className="text-xs font-bold text-teal-800">AR Translation Active</span>
+           <div className="bg-[#198F51]/10 border border-[#198F51]/30 px-4 py-2 rounded-full flex items-center gap-2 mb-4">
+             <RefreshCw className="text-[#198F51] animate-spin-slow" size={14} />
+             <span className="text-xs font-bold text-[#198F51]">AR Translation Active</span>
            </div>
 
            {/* AR Result View (User Image with Overlays) */}
@@ -1089,32 +1258,32 @@ function ScanView() {
              {/* 2. AR Overlays (Floating 'Translated' Badges) */}
              
              {/* Name Tag - Center Top */}
-             <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-teal-200 animate-[bounce_1s_ease-out]">
+             <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 animate-[bounce_1s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">Medicine</p>
-                 <p className="text-sm font-bold text-teal-700">타이레놀 (Painkiller)</p>
-                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-teal-500 rounded-full animate-ping"></div>
+                 <p className="text-sm font-bold text-[#198F51]">타이레놀 (Painkiller)</p>
+                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#198F51] rounded-full animate-ping"></div>
              </div>
 
              {/* Dosage Tag - Bottom Right */}
-             <div className="absolute bottom-1/3 right-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-teal-200 delay-100 animate-[bounce_1.2s_ease-out]">
+             <div className="absolute bottom-1/3 right-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 delay-100 animate-[bounce_1.2s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">Dose</p>
                  <p className="text-sm font-bold text-indigo-700">2 Tablets</p>
              </div>
 
              {/* Instruction Tag - Bottom Left */}
-             <div className="absolute bottom-20 left-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-teal-200 delay-200 animate-[bounce_1.4s_ease-out]">
+             <div className="absolute bottom-20 left-4 bg-white/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg border border-[#198F51]/30 delay-200 animate-[bounce_1.4s_ease-out]">
                  <p className="text-[10px] text-gray-500 font-bold uppercase">How to take</p>
                  <p className="text-sm font-bold text-red-600">After Meal (30min)</p>
              </div>
 
              {/* AR HUD Elements */}
-             <div className="absolute inset-0 border-2 border-teal-400/30 rounded-3xl pointer-events-none"></div>
+             <div className="absolute inset-0 border-2 border-[#198F51]/30 rounded-3xl pointer-events-none"></div>
              <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-[10px] backdrop-blur-sm">
                  AI Confidence: 98%
              </div>
            </div>
            
-           <p className="mt-4 mb-3 text-sm font-bold text-teal-600 text-center px-4 leading-tight">
+           <p className="mt-4 mb-3 text-sm font-bold text-[#198F51] text-center px-4 leading-tight">
              The information provided above does not constitute medical advice.
            </p>
 
@@ -1126,7 +1295,7 @@ function ScanView() {
                <Camera size={18}/> New Scan
              </button>
              <button 
-                className="flex-1 py-3 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-700 transition-colors shadow-lg flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl bg-[#198F51] text-white font-bold hover:bg-[#147a43] transition-colors shadow-lg flex items-center justify-center gap-2"
              >
                 <Zap size={18} className="fill-current"/> Save Info
              </button>
@@ -1143,7 +1312,7 @@ function MatchingView() {
     <div className="p-5 min-h-full flex flex-col items-center relative overflow-hidden">
       <div className="mb-6 w-full z-10">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Users className="text-teal-600"/> Matching
+            <Users className="text-[#198F51]"/> Matching
           </h2>
           <p className="text-sm text-gray-500">Connect with local medical buddies.</p>
       </div>
@@ -1157,22 +1326,22 @@ function MatchingView() {
                  <div className="w-1/2 h-4 bg-gray-200 rounded mb-2"></div>
                  <div className="w-3/4 h-3 bg-gray-100 rounded"></div>
               </div>
-              <div className="w-16 h-8 bg-teal-100 rounded-lg"></div>
+              <div className="w-16 h-8 bg-[#198F51]/20 rounded-lg"></div>
            </div>
          ))}
       </div>
 
       {/* Locked Overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-20 p-6 text-center">
-         <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-teal-100 w-full max-w-xs flex flex-col items-center animate-fade-in">
-            <div className="bg-teal-100 p-4 rounded-full mb-4">
-               <Lock className="text-teal-600" size={32} />
+         <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-[#198F51]/30 w-full max-w-xs flex flex-col items-center animate-fade-in">
+            <div className="bg-[#198F51]/10 p-4 rounded-full mb-4">
+               <Lock className="text-[#198F51]" size={32} />
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Premium Feature</h3>
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
               Connect with verified local bilingual buddies who can accompany you to the hospital.
             </p>
-            <button className="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
+            <button className="w-full bg-[#198F51] text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#147a43] transition-colors flex items-center justify-center gap-2">
                Unlock through Premium
             </button>
             <p className="text-[10px] text-gray-400 mt-3">Starting at $4.99/month</p>
@@ -1217,10 +1386,10 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 py-3 bg-teal-50 text-teal-700 rounded-xl font-medium text-sm">
+          <button className="flex items-center justify-center gap-2 py-3 bg-[#198F51]/10 text-[#198F51] rounded-xl font-medium text-sm">
             <Phone size={18} /> Call (Eng)
           </button>
-          <button className="flex items-center justify-center gap-2 py-3 bg-teal-50 text-teal-700 rounded-xl font-medium text-sm">
+          <button className="flex items-center justify-center gap-2 py-3 bg-[#198F51]/10 text-[#198F51] rounded-xl font-medium text-sm">
             <Globe size={18} /> Website
           </button>
         </div>
@@ -1261,13 +1430,13 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
               <select 
                 value={filterNation}
                 onChange={(e) => setFilterNation(e.target.value)}
-                className="appearance-none bg-teal-50 border border-teal-100 text-teal-700 text-xs font-bold py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="appearance-none bg-[#198F51]/10 border border-[#198F51]/20 text-[#198F51] text-xs font-bold py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#198F51]"
               >
                 {nationalities.map(nat => (
                   <option key={nat} value={nat}>{nat === "All" ? "All Nations" : nat}</option>
                 ))}
               </select>
-              <Filter size={12} className="absolute right-2 top-2.5 text-teal-700 pointer-events-none" />
+              <Filter size={12} className="absolute right-2 top-2.5 text-[#198F51] pointer-events-none" />
             </div>
           </div>
           
@@ -1314,129 +1483,10 @@ function HospitalDetail({ hospital, onBack, onShowInsurance }) {
        
        {/* Booking Button Mockup */}
       <div className="sticky bottom-0 p-4 bg-white border-t border-gray-100 pb-8">
-        <button className="w-full bg-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-teal-700 transition-colors">
+        <button className="w-full bg-[#198F51] text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#147a43] transition-colors">
           Book Appointment
         </button>
       </div>
-    </div>
-  );
-}
-
-function FlashcardView() {
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedProcedure, setSelectedProcedure] = useState(null);
-
-  // 1. Level 1: Category Selection Grid
-  if (!selectedCategory) {
-    return (
-      <div className="p-5 min-h-full bg-gray-50">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Medical Procedures</h2>
-          <p className="text-sm text-gray-500">Select a category to learn about treatments.</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {FLASHCARD_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat)}
-              className={`${cat.color} p-5 rounded-2xl border border-transparent hover:border-teal-500 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 h-36`}
-            >
-              <div className="bg-white p-3 rounded-full shadow-sm">
-                {cat.icon}
-              </div>
-              <span className={`font-bold text-sm text-center ${cat.textColor.replace("text-", "text-opacity-80 ")}`}>
-                {cat.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Level 2: Procedure List for Category
-  if (selectedCategory && !selectedProcedure) {
-    return (
-      <div className={`p-5 min-h-full ${selectedCategory.color} transition-colors duration-500`}>
-        <div className="flex items-center mb-6">
-          <button 
-            onClick={() => setSelectedCategory(null)}
-            className="mr-3 p-2 bg-white rounded-full shadow-sm text-gray-600 hover:bg-gray-100"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <div>
-            <h2 className={`text-xl font-bold ${selectedCategory.textColor}`}>
-              {selectedCategory.label}
-            </h2>
-            <p className="text-xs text-gray-500 opacity-80">Common Procedures</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {selectedCategory.procedures ? (
-            selectedCategory.procedures.map((proc, idx) => (
-              <div 
-                key={idx}
-                onClick={() => setSelectedProcedure(proc)}
-                className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center cursor-pointer hover:shadow-md transition-all"
-              >
-                <span className="font-bold text-gray-800">{proc.title}</span>
-                <ChevronRight size={20} className="text-gray-300" />
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-10 bg-white/50 rounded-xl">
-              <p className="text-gray-500">No procedure data available.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Level 3: Procedure Detail (Step-by-Step)
-  return (
-    <div className="p-5 min-h-full bg-white">
-       <div className="flex items-center mb-6">
-          <button 
-            onClick={() => setSelectedProcedure(null)}
-            className="mr-3 p-2 bg-gray-100 rounded-full shadow-sm text-gray-600 hover:bg-gray-200"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-800 leading-tight">
-              {selectedProcedure.title}
-            </h2>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className={`p-4 rounded-xl ${selectedCategory.color} border border-transparent`}>
-             <h3 className={`font-bold mb-2 flex items-center gap-2 ${selectedCategory.textColor}`}>
-               <Info size={18}/> Procedure Steps
-             </h3>
-             <div className="relative border-l-2 border-gray-300 ml-2 space-y-6 py-2">
-                {selectedProcedure.steps.map((step, idx) => (
-                  <div key={idx} className="relative pl-6">
-                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white ${selectedCategory.activeColor}`}></div>
-                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
-                      {step}
-                    </p>
-                  </div>
-                ))}
-             </div>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-xl text-center">
-            <p className="text-xs text-gray-400 mb-2">Is this procedure covered by insurance?</p>
-            <button className="bg-teal-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm">
-              Check Insurance Guide
-            </button>
-          </div>
-        </div>
     </div>
   );
 }
@@ -1497,7 +1547,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden shrink-0">
-              <div className="w-full h-full flex items-center justify-center bg-teal-100 text-teal-600 font-bold text-xl">JD</div>
+              <div className="w-full h-full flex items-center justify-center bg-[#198F51]/10 text-[#198F51] font-bold text-xl">JD</div>
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
@@ -1508,16 +1558,16 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
                       type="text" 
                       value={name} 
                       onChange={(e) => setName(e.target.value)} 
-                      className="border border-teal-300 rounded px-2 py-1 text-sm font-bold text-gray-800 w-32 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="border border-[#198F51]/50 rounded px-2 py-1 text-sm font-bold text-gray-800 w-32 focus:outline-none focus:ring-2 focus:ring-[#198F51]"
                     />
-                    <button onClick={() => setIsEditingName(false)} className="bg-teal-100 p-1 rounded-full text-teal-700">
+                    <button onClick={() => setIsEditingName(false)} className="bg-[#198F51]/10 p-1 rounded-full text-[#198F51]">
                       <Check size={14} />
                     </button>
                   </div>
                 ) : (
                   <>
                     <h3 className="font-bold text-lg">{name}</h3>
-                    <button onClick={() => setIsEditingName(true)} className="text-gray-400 hover:text-teal-600">
+                    <button onClick={() => setIsEditingName(true)} className="text-gray-400 hover:text-[#198F51]">
                       <Edit2 size={14} />
                     </button>
                   </>
@@ -1525,7 +1575,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
               </div>
               
               {/* Share Button */}
-              <button onClick={copyProfileLink} className="text-gray-400 hover:text-teal-600 p-1">
+              <button onClick={copyProfileLink} className="text-gray-400 hover:text-[#198F51] p-1">
                 <Share2 size={18} />
               </button>
             </div>
@@ -1542,7 +1592,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
               onClick={(e) => onShowInsurance(e, "NHIS")}
             >
                 <p className="text-xs text-gray-400 flex items-center justify-center gap-1">Insurance <Info size={10}/></p>
-                <p className="font-bold text-teal-600">NHIS Active</p>
+                <p className="font-bold text-[#198F51]">NHIS Active</p>
             </div>
         </div>
       </div>
@@ -1589,21 +1639,21 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
       </div>
 
       {/* --- New Section: Current Medications --- */}
-      <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-4">
-        <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+      <div className="bg-[#198F51]/5 rounded-xl p-4 border border-[#198F51]/20 mb-4">
+        <h4 className="font-bold text-[#198F51] mb-2 flex items-center gap-2">
             <Pill size={16} className="fill-current" /> Current Medications
         </h4>
-        <p className="text-xs text-blue-900 mb-3 opacity-80">
+        <p className="text-xs text-[#198F51]/80 mb-3 opacity-80">
             List medications you are currently taking.
         </p>
         
         {/* Meds List */}
         <div className="flex flex-wrap gap-2 mb-3">
           {medications.map(med => (
-            <span key={med} className="bg-white text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-2">
+            <span key={med} className="bg-white text-[#198F51] text-xs font-bold px-3 py-1.5 rounded-lg border border-[#198F51]/20 flex items-center gap-2">
               {med}
               <button onClick={() => handleRemoveMedication(med)}>
-                <X size={12} className="text-blue-500 hover:text-red-500" />
+                <X size={12} className="text-[#198F51] hover:text-red-500" />
               </button>
             </span>
           ))}
@@ -1619,11 +1669,11 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
             value={newMedication}
             onChange={(e) => setNewMedication(e.target.value)}
             placeholder="Add medication..." 
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="flex-1 text-sm px-3 py-2 rounded-lg border border-[#198F51]/20 focus:outline-none focus:ring-2 focus:ring-[#198F51]"
           />
           <button 
             onClick={handleAddMedication}
-            className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            className="bg-[#198F51] text-white px-3 py-2 rounded-lg hover:bg-[#147a43] transition-colors"
           >
             <Plus size={18} />
           </button>
@@ -1643,7 +1693,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
                  <button 
                   key={type}
                   onClick={(e) => onShowInsurance(e, type)}
-                  className="bg-white p-3 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:border-teal-500 hover:text-teal-600 transition-all text-left"
+                  className="bg-white p-3 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:border-[#198F51] hover:text-[#198F51] transition-all text-left"
                  >
                     {type}
                  </button>
@@ -1656,7 +1706,7 @@ function ProfileView({ onShowInsurance, allergies, setAllergies, medications, se
 
 function NavItem({ icon, label, isActive, onClick }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-teal-600' : 'text-gray-400'}`}>
+    <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors w-14 ${isActive ? 'text-[#198F51]' : 'text-gray-400'}`}>
       {icon}
       <span className="text-[10px] font-medium">{label}</span>
     </button>
