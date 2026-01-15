@@ -677,10 +677,6 @@ function SickAndSeekApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // State for user data
-  const [myAllergies, setMyAllergies] = useState(["Peanuts", "Penicillin"]);
-  const [myMedications, setMyMedications] = useState(["Tylenol"]);
-  
   // 🔥 로그인 상태 감지 (여기에 추가!)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
