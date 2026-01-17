@@ -1,5 +1,4 @@
-# Getting Started with Create React App
-
+# Developed an app for StartUp Hackathon Class
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
